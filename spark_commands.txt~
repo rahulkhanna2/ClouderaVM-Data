@@ -1,0 +1,27 @@
+--create RDD from hdfs
+x = sc.textfile("path")
+x.first()
+
+--print first 10 records
+for i in "variable_name".take(10): print(i)
+
+--convert to RDD
+sc.parallelize(collection)
+
+--Read data from different fileformat
+
+sqlContext.load("path_name", "file_format").show()
+			or
+sqlContext.read.json/orc/parque/text("path_name").show()
+
+>>> orderItems = sc.textFile("sqoop_import/retail_db/order_items/")
+>>> orderItemsMap= orderItems.map(lambda o : ( int(o.split(",")[1]), float(o.split(",")[4]) ))
+>>> orderItemsMap.first()
+
+
+#Filter
+orders = sc.textFile("sqoop_import/retail_db/orders/")
+ordersComplete = orders.filter(lambda oc: oc.split(",")[3] == "COMPLETE" or oc.split(",")[3] == "CLOSED")
+
+ordersComplete = orders.filter(lambda oc: oc.split(",")[3] in ["COMPLETE","CLOSED"] and oc.split(",")[1][:7]== "2014-01")
+
