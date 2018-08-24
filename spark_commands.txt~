@@ -171,12 +171,24 @@ topNProducts=  productsFiltered.top(5, key=lambda k: float(k.split(",")[4]))
 (4, <pyspark.resultiterable.ResultIterable object at 0x1bd18d0>)
 
 
-def getTopNPricedProductsByCategory(productsPerCategory, topN):
-	productsSorted= sorted(productsPerCategory[1]. key= lambda k: float (k.split(",")[4]), reverse= True)
+//get top N products in each category function
+
+>>> def getTopNPricedProductsByCategory(CategoryId, topN):
+	#products = sc.textFile("data/retail_db/products")
+	productsFiltered = products.filter(lambda p: p.split(",")[4] != "")
+	productsMap= productsFiltered.map(lambda p: (int(p.split(",")[1]),p))
+	productsGroupByCategory = productsMap.groupByKey()
+	productsPerCategory= productsGroupByCategory.filter(lambda p: p[0]== CategoryId).first()
+	productsSorted= sorted(productsPerCategory[1], key= lambda k: float (k.split(",")[4]), reverse= True)
 	productPrices= map(lambda p: float(p.split(",")[4]), productsSorted)
-	topNPricecs = sorted(set(productPrices), reverse=True)[:topN]
+	topNPrices = sorted(set(productPrices), reverse=True)[:topN]
 	import itertools as it
 	return it.takewhile(lambda p: float(p.split(",")[4]) in topNPrices, productsSorted)
 	
-sorted(t[1], key= lambda k: float(k.split(",")[4]), reverse=True)
+>>> d = list(getTopNPricedProductsByCategory(4,3))
+//Make each prodcut a new sublist within the list and retrieve only specific thing
+>>> b = [d[x:x+1] for x in range(0, len(d))]
+>>> for i in b:
+...     print(i[0].split(",")[:5])
+
 
