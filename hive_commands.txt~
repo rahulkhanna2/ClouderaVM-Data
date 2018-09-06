@@ -38,6 +38,11 @@ INSERT OVERWRITE DIRECTORY '/user/cloudera/hive_data' select * from daily_revenu
 
 --Save data from hive to local
 INSERT OVERWRITE LOCAL DIRECTORY '/home/cloudera/hive_data' select * from daily_revenue_per_pname;
+					
+					or
+
+hive -e 'select * from retail_db_txt.daily_revenue_per_pname' > /home/cloudera/Desktop/hive_data.csv
+
 
 --save data to mysql database
 mysql> create table daily_revenue_per_product_name (order_date varchar2(100), product_name varchar2(500), order_item_subtotal double)
