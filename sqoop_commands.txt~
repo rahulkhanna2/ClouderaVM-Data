@@ -25,7 +25,7 @@ sqoop import \
 	--username root \
 	--password cloudera \
 	--table order_items \
-	--warehouse-dir /user/cloudera/sqoop_import/retail_db
+	--warehouse-dir /user/cloudera/sqoop_import/retail_db \
 	--num-mappers 1
 
 
@@ -193,6 +193,10 @@ sqoop export \
 	--input-fields-terminated-by '\001' \
 	--update-key order_date \
 	--table daily_revenue
+
+
+	
+
 
 sqoop export \
 	--connect jdbc:mysql://quickstart.cloudera/retail_export \

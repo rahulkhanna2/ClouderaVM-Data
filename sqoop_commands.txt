@@ -193,6 +193,8 @@ sqoop export \
 	--input-fields-terminated-by '\001' \
 	--update-key order_date \
 	--table daily_revenue
+	
+
 
 sqoop export \
 	--connect jdbc:mysql://quickstart.cloudera/retail_export \

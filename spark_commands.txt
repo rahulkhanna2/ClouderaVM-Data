@@ -240,15 +240,9 @@ revenueDF.save("/revenuePerOrder_json", "json")
 revenueDF.write.json("/revenuePerOrder_json_using_write", "gzip")
 
 
+--Problem Statement 
 
-
-
-
-
-
-
-
---Problem Statement
+--Get Daily Revenue Per Product along with product name in ascending order date and descending order revenue
 
 
 orders = sc.textFile("data/retail_db/orders")
@@ -257,11 +251,9 @@ ordersMap = ordersFiltered.map(lambda o: (int(o.split(",")[0]),o.split(",")[1]))
 orderItems = sc.textFile("data/retail_db/order_items")
 orderItemsMap = orderItems.map(lambda o: (int(o.split(",")[1]) , (int(o.split(",")[2]),float(o.split(",")[4]))))
 ordersJoin = ordersMap.join(orderItemsMap)
-for i in ordersJoin.take(2): print(i)
 ordersJoinMap = ordersJoin.map(lambda o: ((o[1][0],o[1][1][0]),o[1][1][1]))
 from operator import add
 dailyRevenuePerProductId = ordersJoinMap.reduceByKey(add)
-for i in dailyRevenuePerProductId.take(2): print(i)
 productsRaw = open("/home/cloudera/Desktop/data/retail_db/products/part-00000").read().splitlines()
 products = sc.parallelize(productsRaw)
 productsMap = products.map(lambda o: (int(o.split(",")[0]),o.split(",")[2]))
@@ -274,10 +266,7 @@ dailyRevenuePerProductName.saveAsTextFile("/user/cloudera/daily_revenue_txt")
 
 --Get only Nike Products from the list
 
-products = []
-for i in range(0,6):
-	products.extend(open("/home/cloudera/Desktop/daily_revenue_txt/part-0000" + str(i)).read().splitlines());
-products =sc.parallelize(products)
+products=sc.textFile("file:///home/cloudera/Desktop/daily_revenue_txt")
 nikeProducts = products.filter(lambda o: "Nike" in o.split(",")[2].split(" "))
 
 --Get Revenue of only the Nike Products
@@ -285,3 +274,13 @@ nikeProductsRevenue = nikeProducts.map(lambda o: float(o.split(",")[1])).reduce(
 
 --Get Distinct Products in the data
 for i in products.map(lambda o: o.split(",")[2]).distinct().collect(): print(i)
+
+
+
+pyspark --master yarn --conf saprk.ui.port=12890 --num-executors 2 --executor-memory 512M --packages com.databricks:spark-avro_2.11:4.0.0
+
+spark-submit --master yarn --num-executors 2 --executor-memory 512M  src/main/python/DailyRevenuePerProduct.py
+
+
+
+
