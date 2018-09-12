@@ -56,3 +56,22 @@ mysql> create table daily_revenue_per_product_name (order_date varchar2(100), pr
 	--export-dir /home/cloudera/hive_data/ \
 	--input-fields-terminated-by '\001'
 
+
+
+
+SPARK SQL
+cast(date_format(order_date, 'YYYYMM') as int)
+
+--create a Temp Table and Dataframe from  hdfs data
+
+ordersRDD = sc.textFile("sqoop_import/retail_db/orders")
+from pyspark.sql import Row
+ordersDF = ordersRDD.map(lambda o: Row(int(o.split(",")[0]),o.split(",")[1],int(o.split(",")[2]), o.split(",")[3] )).toDF()
+ordersDF.registerTempTable("ordersDF_table")
+sqlContext.sql("select * from ordersDF_table limit 10").show()
+
+--To run the sqlContext.sql() query with only two task set the below property
+sqlContext.setConf("spark.sql.shuffle.partitions", "2")
+
+
+
