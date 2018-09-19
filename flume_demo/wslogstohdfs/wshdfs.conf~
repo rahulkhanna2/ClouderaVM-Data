@@ -19,7 +19,6 @@ wh.sinks.hd.hdfs.fileSuffix = .txt
 wh.sinks.hd.hdfs.rollInterval = 120
 wh.sinks.hd.hdfs.rollSize = 1048576
 wh.sinks.hd.hdfs.rollCount = 100
-hdfs.fileType= DataStream
 
 
 # Use a channel which buffers events in memory
