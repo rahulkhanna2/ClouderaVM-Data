@@ -1,0 +1,1 @@
+#Problem Statment - Get data from Webserver using exec source and store in HDFS using memory channel
