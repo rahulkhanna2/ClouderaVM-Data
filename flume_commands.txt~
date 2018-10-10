@@ -11,3 +11,8 @@ flume-ng agent -n wh -f /home/cloudera/Desktop/git/flume_demo/wslogstohdfs/wshdf
 flume-ng agent -n wh -f /home/cloudera/Desktop/git/flume_demo/wslogsreplicate/wsreplicate.conf
 
 
+--Start Consolidated Sinks (After Starting sinks on both the servers)
+
+
+flume-ng agent --conf /home/cloudera/Desktop/git/flume_demo/multiplexing/avro-sources-consolidate/ \
+-f /home/cloudera/Desktop/git/flume_demo/multiplexing/avro-sources-consolidate/consolidated-sinks.conf  -n wh

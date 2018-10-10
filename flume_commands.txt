@@ -16,3 +16,5 @@ flume-ng agent -n wh -f /home/cloudera/Desktop/git/flume_demo/wslogsreplicate/ws
 
 flume-ng agent --conf /home/cloudera/Desktop/git/flume_demo/multiplexing/avro-sources-consolidate/ \
 -f /home/cloudera/Desktop/git/flume_demo/multiplexing/avro-sources-consolidate/consolidated-sinks.conf  -n wh
+
+flume-ng agent --conf /home/cloudera/Desktop/git/flume_demo/twitterIngestion/ -f /home/cloudera/Desktop/git/flume_demo/twitterIngestion/tweetIngestion.conf -n TwitterAgent
