@@ -1,6 +1,0 @@
-import org.apache.spark.streaming._
-
-import org.apache.spark.SparkConf
-
-val conf = new SparkConf().setAppName("streaming").setMaster("yarn-client")
-
