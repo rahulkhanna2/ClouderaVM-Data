@@ -1,0 +1,286 @@
+--create RDD from hdfs
+x = sc.textfile("path")
+x.first()
+
+--print first 10 records
+for i in "variable_name".take(10): print(i)
+
+--convert to RDD
+sc.parallelize(collection)
+
+--Read data from different fileformat
+
+sqlContext.load("path_name", "file_format").show()
+			or
+sqlContext.read.json/orc/parque/text("path_name").show()
+
+orderItems = sc.textFile("sqoop_import/retail_db/order_items/")
+orderItemsMap= orderItems.map(lambda o : ( int(o.split(",")[1]), float(o.split(",")[4]) ))
+orderItemsMap.first()
+
+
+--Filter
+
+orders = sc.textFile("sqoop_import/retail_db/orders/")
+ordersComplete = orders.filter(lambda oc: oc.split(",")[3] == "COMPLETE" or oc.split(",")[3] == "CLOSED")
+
+ordersComplete = orders.filter(lambda oc: oc.split(",")[3] in ["COMPLETE","CLOSED"] and oc.split(",")[1][:7]== "2014-01")
+
+
+--JOIN (data should be in  (K,V) and (K,W) and result is (K,(V,W)) )
+
+orders = sc.textFile("data/retail_db/orders")
+orderItems = sc.textFile("data/retail_db/order_items")
+ordersMap= orders.map(lambda o: (int(o.split(",")[0]), o.split(",")[1]))
+ordersMap.first()
+(1, u'2013-07-25 00:00:00.0')
+orderItemsMap= orderItems.map(lambda oi: ( int(oi.split(",")[1]), float(oi.split(",")[4])  ))
+orderItemsMap.first()
+(1, 299.98000000000002)
+ordersMap.first()
+(1, u'2013-07-25 00:00:00.0')
+ordersJoin= ordersMap.join(orderItemsMap)
+for i in ordersJoin.take(10):print(i)
+ordersleftOuterJoin= ordersMap.leftOuterJoin(orderItemsMap)                 
+ordersleftOuterJoin.first()
+(32768, (u'2014-02-12 00:00:00.0', 199.99000000000001))
+for i in ordersleftOuterJoin.take(10):print(i) 
+orderleftfilter= ordersleftOuterJoin.filter(lambda o: o.split(",")[1][1]== None)
+orderleftfilter.first()
+(43692, (u'2014-04-21 00:00:00.0', None))
+orderleftfilter.count()
+11452
+
+
+orderItemsMap.join(ordersMap)
+
+--AGGREGARTIONS-total
+
+orderItems.count()
+
+--AGGREGATION- get revenue for a given orderid
+
+orderItemsFiltered = orderItems.filter( lambda o: int(o.split(",")[1])==2    )
+for i in orderItemsFiltered.take(40): print (i)
+...
+2,2,1073,1,199.99,199.99
+3,2,502,5,250.0,50.0
+4,2,403,1,129.99,129.99
+orderItemsSubtotal= orderItemsFiltered.map(lambda o: float(o.split(",")[4]))
+for i in orderItemsSubtotal.take(40): print (i)                             ...
+199.99
+250.0
+129.99
+help(orderItemsSubtotal.reduce)
+>>>
+from operator import add
+orderItemsSubtotal.reduce(add)
+579.98000000000002
+
+
+--Get orderitem details which have minimun ordersubtotal for a given order id 
+
+orderItemsFiltered = orderItems.filter( lambda o: int(o.split(",")[1])==2    )
+>>>orderItemsFiltered.reduce( lambda x,y: x if (  float(x.split(",")[4]) <float(y.split(",")[4])) else y)
+
+
+--countByKey- Get count by status
+
+ordersMap = orders.map(lambda o: (o.split(",")[3],1))
+countByStatus = orderStatus.countByKey()
+
+
+--Get Revenue for each orderId (groupByKey)
+
+orderItems = sc.textFile("data/retail_db/order_items")
+orderItemsMap = orderItems.map(lambda o: ( int(o.split(",")[1]), float(o.split(",")[4])   ))
+countByGroup= orderItemsMap.groupByKey()
+revenuePerOrderId = countByGroup.map(lambda oi: (oi[0], sum(oi[1])) )
+for i in revenuePerOrderId.take(10): print(i)
+
+--Get Order Items detail in descing order by revenue
+
+orderItems = sc.textFile("data/retail_db/order_items")
+orderItemsMap = orderItems.map(lambda o: ( int(o.split(",")[1]), o))
+countByGroup= orderItemsMap.groupByKey()
+orderItemsSortedBySubtotalPerOrder =countByGroup.flatMap(lambda oi: sorted(oi[1], key= lambda k: float(k.split(",")[4]), reverse=True)  )
+for i in orderItemsSortedBySubtotalPerOrder.take(10): print(i)
+
+
+--Get Revenue PerOrder by reduceByKey
+orderItems = sc.textFile("data/retail_db/order_items")
+orderItemsMap = orderItems.map(lambda o: ( int(o.split(",")[1]), float(o.split(",")[4])   ))
+revenuePerOrderId= orderItemsMap.reduceByKey(lambda x,y: x+y)
+
+
+minSubtTotalPerId = orderItemsMap.reduceByKey(lambda x,y: x if(x<y) else y )
+
+--WordCount in Pyspark
+testFile = sc.textFile("testFile.txt")
+words= testFile.flatMap(lambda o: o.split(" "))
+wordCount = words.map(lambda o: (o,1)).reduceByKey(lambda x,y: x+y)
+
+
+wordCount= testFile.flatMap(lambda o: o.split(" ")).map(lambda o: (o,1)).reduceByKey(lambda x,y: x+y)
+
+
+--Get Revenue and Count for each orde id - aggregate by key
+
+orderItems = sc.textFile("data/retail_db/order_items")
+orderItemsMap= orderItems.map(lambda oi: ( int(oi.split(",")[1]), float(oi.split(",")[4])))
+
+(2, 199.99)
+(2, 250.0)
+(2, 129.99)
+
+revenuePerOrder= orderItemsMap.aggregateByKey((0.0,0) ,lambda x,y: (x[0]+y, x[1]+1), lambda x,y: (x[0]+y[0], x[1]+y[1]) )
+for i in revenuePerOrder.take(10): print(i)                                                
+...
+(2, (579.98000000000002, 3))
+(4, (699.85000000000002, 4))
+(8, (729.83999999999992, 4))
+(10, (651.92000000000007, 5))
+(12, (1299.8700000000001, 5))
+(14, (549.94000000000005, 3))
+(16, (419.93000000000001, 2))
+
+--Sort data by product Price - SortByKey (key should be the value on which the data is to be sorted)
+products = sc.textFile("data/retail_db/products")
+productsMap = products.filter(lambda p: p.split(",")[4] != "").map(lambda p: (float(p.split(",")[4]),p))
+productsSortedByPrice = productsMap.sortByKey() 
+
+
+--sort data by category and then product price in descending order (negating the second value of key)
+productsMap = products.filter(lambda p: p.split(",")[4] != "").map(lambda p: ( (int(p.split(",")[1]), -float(p.split(",")[4])), p))
+productsSortedByPrice = productsMap.sortByKey()                                    
+for i in productsSortedByPrice.map(lambda o: o[1]).take(10): print(i) 
+
+
+--takeordered (sort in ascending order based on key)) or top (sort in descedning order based on key)
+productsFiltered = products.filter(lambda p: p.split(",")[4] != "")
+topNProducts=  productsFiltered.top(5, key=lambda k: float(k.split(",")[4]))
+
+--get top N products in each category - By Key Ranking- groupByKey and FlatMap
+
+
+productsFiltered = products.filter(lambda p: p.split(",")[4] != "")
+productsMap= productsFiltered.map(lambda p: (int(p.split(",")[1]),p))
+productsGroupByCategory = productsMap.groupByKey()
+for i in productsGroupByCategory.take(2): print(i)
+...
+(2, <pyspark.resultiterable.ResultIterable object at 0x1bd1990>)
+(4, <pyspark.resultiterable.ResultIterable object at 0x1bd18d0>)
+
+
+--get top N products in each category function
+
+def getTopNPricedProductsByCategory(CategoryId, topN):
+	#products = sc.textFile("data/retail_db/products")
+	productsFiltered = products.filter(lambda p: p.split(",")[4] != "")
+	productsMap= productsFiltered.map(lambda p: (int(p.split(",")[1]),p))
+	productsGroupByCategory = productsMap.groupByKey()
+	productsPerCategory= productsGroupByCategory.filter(lambda p: p[0]== CategoryId).first()
+	productsSorted= sorted(productsPerCategory[1], key= lambda k: float (k.split(",")[4]), reverse= True)
+	productPrices= map(lambda p: float(p.split(",")[4]), productsSorted)
+	topNPrices = sorted(set(productPrices), reverse=True)[:topN]
+	import itertools as it
+	return it.takewhile(lambda p: float(p.split(",")[4]) in topNPrices, productsSorted)
+	
+d = list(getTopNPricedProductsByCategory(4,3))
+//Make each prodcut a new sublist within the list and retrieve only specific thing
+b = [d[x:x+1] for x in range(0, len(d))]
+for i in b:
+...     print(i[0].split(",")[:5])
+
+
+--Set Operations - Prepare Data - subsets of products for 2013-12 and 2014-01
+orders = sc.textFile("sqoop_import/retail_db/orders/")
+orderItems = sc.textFile("sqoop_import/retail_db/order_items/")
+orderItemsMap= orderItems.map(lambda o : ( int(o.split(",")[1]), o))
+orders_201312 = orders.filter(lambda o: o.split(",")[1][:7]== "2013-12").map(lambda o: (int(o.split(",")[0]),o))
+orders_201401 = orders.filter(lambda o: o.split(",")[1][:7]== "2014-01").map(lambda o: (int(o.split(",")[0]),o))
+orders201312Join = orders_201312.join(orderItemsMap)
+orders201401Join = orders_201401.join(orderItemsMap)
+
+
+--Union Operations -0Get product Ids Sold in 2013-12 and 2014-01
+
+products201312 = orders201312Join.map(lambda p: p[1][1].split(",")[2])
+products201401 = orders201401Join.map(lambda p: p[1][1].split(",")[2])
+allproducts = products201312.union(products201401)
+
+--Intersection -Get product ID's sold both in 2013-12 and 2014-01
+
+commonproducts = products201312.intersection(products201401)
+
+--Minus -Get products ID sold in 2013-12 but not in 2014-01
+
+products201312only= products201312.subtract(products201401)
+
+
+--Saving Text Files with delimeters
+orderItems = sc.textFile("data/retail_db/order_items")
+orderItemsMap = orderItems.map(lambda o: ( int(o.split(",")[1]), float(o.split(",")[4])))
+revenuePerOrderId= orderItemsMap.reduceByKey(lambda x,y: x+y)
+revenuePerOrderId= revenuePerOrderId.map(lambda r: str(r[0])+ "\t" + str( round((r[1]),3)))
+
+revenuePerOrderId.saveAsTextFile("/user/cloudera/revenuePerOrderId")
+
+--Saving Text Files with delimeters using codec
+to check codecs installed on your cluster go to etc/hadoop/conf and search for compression.codecs to search for codecs
+
+revenuePerOrderId.saveAsTextFile("/user/cloudera/revenuePerOrderId_compressed", compression CodecClass = "")
+
+
+--Saving to other file formats
+revenuePerOrderId= orderItemsMap.reduceByKey(lambda x,y: x+y)
+#revenuePerOrderId.toDF(schema = ["order_id" ,"order_revenue"]).show()
+revenueDF= revenuePerOrderId.toDF(schema = ["order_id" ,"order_revenue"])
+revenueDF.save("/revenuePerOrder_json", "json")
+revenueDF.write.json("/revenuePerOrder_json_using_write", "gzip")
+
+
+--Problem Statement 
+
+--Get Daily Revenue Per Product along with product name in ascending order date and descending order revenue
+
+
+orders = sc.textFile("data/retail_db/orders")
+ordersFiltered = orders.filter(lambda oc: oc.split(",")[3] in ["COMPLETE", "CLOSED"])
+ordersMap = ordersFiltered.map(lambda o: (int(o.split(",")[0]),o.split(",")[1]))
+orderItems = sc.textFile("data/retail_db/order_items")
+orderItemsMap = orderItems.map(lambda o: (int(o.split(",")[1]) , (int(o.split(",")[2]),float(o.split(",")[4]))))
+ordersJoin = ordersMap.join(orderItemsMap)
+ordersJoinMap = ordersJoin.map(lambda o: ((o[1][0],o[1][1][0]),o[1][1][1]))
+from operator import add
+dailyRevenuePerProductId = ordersJoinMap.reduceByKey(add)
+productsRaw = open("/home/cloudera/Desktop/data/retail_db/products/part-00000").read().splitlines()
+products = sc.parallelize(productsRaw)
+productsMap = products.map(lambda o: (int(o.split(",")[0]),o.split(",")[2]))
+dailyRevenueMap = dailyRevenuePerProductId.map(lambda o: (o[0][1], (o[0][0], o[1])))
+productsJoin = dailyRevenueMap.join(productsMap)
+productsJoinSorted = productsJoin.map(lambda o: (( o[1][0][0], -o[1][0][1]), o[1][0][0]+ ","+str(o[1][0][1])+ "," + o[1][1])).sortByKey()
+dailyRevenuePerProductName = productsJoinSorted.map(lambda o: o[1])
+dailyRevenuePerProductName.saveAsTextFile("/user/cloudera/daily_revenue_txt")
+
+
+--Get only Nike Products from the list
+
+products=sc.textFile("file:///home/cloudera/Desktop/daily_revenue_txt")
+nikeProducts = products.filter(lambda o: "Nike" in o.split(",")[2].split(" "))
+
+--Get Revenue of only the Nike Products
+nikeProductsRevenue = nikeProducts.map(lambda o: float(o.split(",")[1])).reduce(lambda x,y: x+y)
+
+--Get Distinct Products in the data
+for i in products.map(lambda o: o.split(",")[2]).distinct().collect(): print(i)
+
+
+
+pyspark --master yarn --conf saprk.ui.port=12890 --num-executors 2 --executor-memory 512M --packages com.databricks:spark-avro_2.11:4.0.0
+
+spark-submit --master yarn --num-executors 2 --executor-memory 512M  src/main/python/DailyRevenuePerProduct.py
+
+
+
+
