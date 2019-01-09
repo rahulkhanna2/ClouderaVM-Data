@@ -1,0 +1,20 @@
+sudo /opt/gen_logs
+./start-logs.sh
+
+#Problem Statment - Get data from Webserver using exec source and store in HDFS using memory channel
+
+flume-ng agent -n wh -f /home/cloudera/Desktop/git/flume_demo/wslogstohdfs/wshdfs.conf
+
+
+--Create two sink and replicate data to both local and HDFS
+
+flume-ng agent -n wh -f /home/cloudera/Desktop/git/flume_demo/wslogsreplicate/wsreplicate.conf
+
+
+--Start Consolidated Sinks (After Starting sinks on both the servers)
+
+
+flume-ng agent --conf /home/cloudera/Desktop/git/flume_demo/multiplexing/avro-sources-consolidate/ \
+-f /home/cloudera/Desktop/git/flume_demo/multiplexing/avro-sources-consolidate/consolidated-sinks.conf  -n wh
+
+flume-ng agent --conf /home/cloudera/Desktop/git/flume_demo/twitterIngestion/ -f /home/cloudera/Desktop/git/flume_demo/twitterIngestion/tweetIngestion.conf -n TwitterAgent

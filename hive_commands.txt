@@ -1,0 +1,77 @@
+use database_name;
+show tables;
+describe foramtted table_name;
+
+create database retail_db_txt
+set hive.metastore.warehouse.dir;
+
+create table orders (order_id int, order_date string, order_customer_id int, order_status string) row format delimited fields terminated by ',' stored as textfile;
+
+create table order_items (order_item_id int, order_item_order_id int,  order_item_product_id int, order_item_quantity int, order_item_subtotal float, order_item_product_price float) row format delimited fields terminated by ',' stored as textfile;
+
+load data local inpath "/home/cloudera/Desktop/data/retail_db/orders" into table orders;
+
+load data local inpath "/home/cloudera/Desktop/data/retail_db/order_items" into table order_items;
+
+sqoop import \
+	--connect jdbc:mysql://quickstart.cloudera/retail_db \
+	--username root \
+	--password cloudera \
+	--table products \
+	--hive-import \
+	--hive-database retail_db_txt \
+	--hive-table products \
+	--num-mappers 2
+
+
+create table ordersComplete as select order_date, order_item_product_id, order_item_subtotal from orders o join order_items oi on o.order_id  = oi.order_item_order_id where (o.order_status = "COMPLETE" or o.order_status = "CLOSED" );
+
+
+create table order_complete_pname as select order_date, order_item_subtotal, product_name from ordersComplete oc join products p on p.product_id = order_item_product_id order by order_date asc, order_item_subtotal desc;
+
+create table daily_revenue_per_pname as select order_date,product_name, sum(order_item_subtotal) order_item_subtotal from order_complete_pname group by order_date, product_name, order_date order by order_date asc, order_item_subtotal desc;
+
+
+[cloudera@quickstart ~]$ hadoop fs -mkdir hive_data 
+
+--Save to hdfs file
+INSERT OVERWRITE DIRECTORY '/user/cloudera/hive_data' select * from daily_revenue_per_pname;
+
+--Save data from hive to local
+INSERT OVERWRITE LOCAL DIRECTORY '/home/cloudera/hive_data' select * from daily_revenue_per_pname;
+					
+					or
+
+hive -e 'select * from retail_db_txt.daily_revenue_per_pname' > /home/cloudera/Desktop/hive_data.csv
+
+
+--save data to mysql database
+mysql> create table daily_revenue_per_product_name (order_date varchar2(100), product_name varchar2(500), order_item_subtotal double)
+
+[cloudera@quickstart ~]$ sqoop export \
+	--connect jdbc:mysql://quickstart.cloudera/retail_export \
+	--username root \
+	--password cloudera \
+	--table daily_revenue_per_product_name \
+	--export-dir /home/cloudera/hive_data/ \
+	--input-fields-terminated-by '\001'
+
+
+
+
+SPARK SQL
+cast(date_format(order_date, 'YYYYMM') as int)
+
+--create a Temp Table and Dataframe from  hdfs data
+
+ordersRDD = sc.textFile("sqoop_import/retail_db/orders")
+from pyspark.sql import Row
+ordersDF = ordersRDD.map(lambda o: Row(int(o.split(",")[0]),o.split(",")[1],int(o.split(",")[2]), o.split(",")[3] )).toDF()
+ordersDF.registerTempTable("ordersDF_table")
+sqlContext.sql("select * from ordersDF_table limit 10").show()
+
+--To run the sqlContext.sql() query with only two task set the below property
+sqlContext.setConf("spark.sql.shuffle.partitions", "2")
+
+
+
